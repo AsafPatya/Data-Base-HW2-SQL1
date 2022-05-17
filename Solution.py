@@ -12,17 +12,15 @@ def createTable() -> None:
     conn = None
     try:
         conn = Connector.DBConnector()
-
         conn.execute("CREATE TABLE IF NOT EXISTS File(fileID INTEGER UNIQUE NOT NULL, type TEXT NOT NULL, "
                      "size INTEGER NOT NULL)")
-
         conn.execute("CREATE TABLE IF NOT EXISTS Disk(diskID INTEGER UNIQUE NOT NULL, company TEXT NOT NULL,"
                      " speed INTEGER NOT NULL, free_space TEXT NOT NULL, cost INTEGER NOT NULL)")
-
         conn.execute("CREATE TABLE IF NOT EXISTS Ram(ramID INTEGER UNIQUE NOT NULL, company TEXT NOT NULL,"
                      " size INTEGER NOT NULL)")
-
+        # conn.execute("INSERT INTO file(fileID, type, size) VALUES(1, 'asaf', 2)")
         conn.commit()
+
     except DatabaseException.ConnectionInvalid as e:
         print(e)
     except DatabaseException.NOT_NULL_VIOLATION as e:
@@ -41,11 +39,55 @@ def createTable() -> None:
 
 
 def clearTables():
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        conn.execute("DELETE FROM file")
+        conn.execute("DELETE FROM disk")
+        conn.execute("DELETE FROM ram")
+        conn.commit()
+
+    except DatabaseException.ConnectionInvalid as e:
+        print(e)
+    except DatabaseException.NOT_NULL_VIOLATION as e:
+        print(e)
+    except DatabaseException.CHECK_VIOLATION as e:
+        print(e)
+    except DatabaseException.UNIQUE_VIOLATION as e:
+        print(e)
+    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
+        print(e)
+    except Exception as e:
+        print(e)
+    finally:
+        # will happen any way after try termination or exception handling
+        conn.close()
 
 
 def dropTables():
-    pass
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        conn.execute("DROP TABLE file")
+        conn.execute("DROP TABLE disk")
+        conn.execute("DROP TABLE ram")
+        conn.commit()
+
+    except DatabaseException.ConnectionInvalid as e:
+        print(e)
+    except DatabaseException.NOT_NULL_VIOLATION as e:
+        print(e)
+    except DatabaseException.CHECK_VIOLATION as e:
+        print(e)
+    except DatabaseException.UNIQUE_VIOLATION as e:
+        print(e)
+    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
+        print(e)
+    except Exception as e:
+        print(e)
+    finally:
+        # will happen any way after try termination or exception handling
+        conn.close()
 
 
 def addFile(file: File) -> Status:
@@ -142,3 +184,5 @@ def getCloseFiles(fileID: int) -> List[int]:
 
 if __name__ == '__main__':
     createTable()
+    clearTables()
+    dropTables()
