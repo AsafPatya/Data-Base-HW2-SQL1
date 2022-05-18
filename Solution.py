@@ -124,6 +124,7 @@ def getRAMByID(ramID: int) -> RAM:
 
 
 def deleteRAM(ramID: int) -> Status:
+    x = 3
     return Status.OK
 
 
