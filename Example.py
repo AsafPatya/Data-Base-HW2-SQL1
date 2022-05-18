@@ -85,8 +85,9 @@ def addUser(ID: int, name: str) -> Status:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL("INSERT INTO Users(id, name) VALUES({id}, {username})").format(id=sql.Literal(ID),
-                                                                                       username=sql.Literal(name))
+        query = sql.SQL("INSERT INTO Users(id, name) "
+                        "VALUES({id}, {username})").format(id=sql.Literal(ID),
+                                                           username=sql.Literal(name))
         rows_effected, _ = conn.execute(query)
         conn.commit()
     except DatabaseException.ConnectionInvalid as e:
