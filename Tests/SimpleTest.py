@@ -777,6 +777,201 @@ class Test(AbstractTest):
         expected = []
         self.assertEqual(len(res), len(expected))
 
+    ############################################ isCompanyExclusive #######################################
+    def test_isCompanyExclusive_regular_case_True(self):
+        """
+
+        :return:
+        """
+        disk1 = Disk(1, "DELL", 10, 200, 10)
+        ram1 = RAM(1, "DELL", 10)
+        ram2 = RAM(2, "DELL", 20)
+        ram3 = RAM(3, "DELL", 30)
+        Solution.addDisk(disk1)
+        Solution.addRAM(ram1)
+        Solution.addRAM(ram2)
+        Solution.addRAM(ram3)
+        Solution.addRAMToDisk(1, 1)
+        Solution.addRAMToDisk(2, 1)
+        Solution.addRAMToDisk(3, 1)
+        res = Solution.isCompanyExclusive(disk1.getDiskID())
+        self.assertEqual(True, res)
+
+    def test_isCompanyExclusive_regular_case_False(self):
+        """
+
+        :return:
+        """
+        disk1 = Disk(1, "AMAZON", 10, 200, 10)
+        ram1 = RAM(1, "DELL", 10)
+        ram2 = RAM(2, "DELL", 20)
+        ram3 = RAM(3, "DELL", 30)
+        ram4 = RAM(4, "DL", 30)
+
+        Solution.addDisk(disk1)
+        Solution.addRAM(ram1)
+        Solution.addRAM(ram2)
+        Solution.addRAM(ram3)
+        Solution.addRAM(ram4)
+        Solution.addRAMToDisk(1, 1)
+        Solution.addRAMToDisk(2, 1)
+        Solution.addRAMToDisk(3, 1)
+        Solution.addRAMToDisk(4, 1)
+
+        res = Solution.isCompanyExclusive(disk1.getDiskID())
+        self.assertEqual(False, res)
+
+    def test_isCompanyExclusive_regular_case_False1(self):
+        """
+
+        :return:
+        """
+        disk1 = Disk(1, "AMAZON", 10, 200, 10)
+        ram1 = RAM(1, "AMAZON", 10)
+        ram2 = RAM(2, "DELL", 20)
+        ram3 = RAM(3, "DELL", 30)
+        ram4 = RAM(4, "DL", 30)
+
+        Solution.addDisk(disk1)
+        Solution.addRAM(ram1)
+        Solution.addRAM(ram2)
+        Solution.addRAM(ram3)
+        Solution.addRAM(ram4)
+        Solution.addRAMToDisk(1, 1)
+        Solution.addRAMToDisk(2, 1)
+        Solution.addRAMToDisk(3, 1)
+        Solution.addRAMToDisk(4, 1)
+
+        res = Solution.isCompanyExclusive(disk1.getDiskID())
+        self.assertEqual(False, res)
+
+    def test_isCompanyExclusive_disk_doesnt_exists(self):
+        """
+
+        :return:
+        """
+        disk1 = Disk(1, "DELL", 10, 200, 10)
+        res = Solution.isCompanyExclusive(1)
+        self.assertEqual(False, res)
+
+    def test_isCompanyExclusive_disk_doesnt_exists1(self):
+        """
+
+        :return:
+        """
+        disk1 = Disk(1, "AMAZON", 10, 200, 10)
+        disk2 = Disk(1, "AMAZON", 10, 200, 10)
+        ram1 = RAM(1, "AMAZON", 10)
+        ram2 = RAM(2, "DELL", 20)
+        ram3 = RAM(3, "DELL", 30)
+        ram4 = RAM(4, "DL", 30)
+
+        Solution.addDisk(disk1)
+        Solution.addRAM(ram1)
+        Solution.addRAM(ram2)
+        Solution.addRAM(ram3)
+        Solution.addRAM(ram4)
+        Solution.addRAMToDisk(1, 1)
+        Solution.addRAMToDisk(2, 1)
+        Solution.addRAMToDisk(3, 1)
+        Solution.addRAMToDisk(4, 1)
+
+        res = Solution.isCompanyExclusive(disk2.getDiskID())
+        self.assertEqual(False, res)
+
+    def test_isCompanyExclusive_regular_case_True_no_files(self):
+        """
+
+        :return:
+        """
+        disk1 = Disk(1, "DELL", 10, 200, 10)
+        Solution.addDisk(disk1)
+        res = Solution.isCompanyExclusive(disk1.getDiskID())
+        self.assertEqual(True, res)
+
+    ############################################ getConflictingDisks #######################################
+    def test_getConflictingDisks_regular_test(self):
+        """
+
+        :return:
+        """
+        disk1 = Disk(1, "DELL", 10, 200, 10)
+        disk2 = Disk(2, "DELL", 10, 200, 10)
+        disk3 = Disk(3, "DELL", 10, 200, 10)
+        disk4 = Disk(4, "DELL", 10, 200, 10)
+
+        Solution.addDisk(disk1)
+        Solution.addDisk(disk2)
+        Solution.addDisk(disk3)
+        Solution.addDisk(disk4)
+
+        file1 = File(1, "wav", 10)
+        file2 = File(2, "wav", 10)
+        file3 = File(3, "wav", 10)
+        file4 = File(4, "wav", 10)
+        file5 = File(5, "wav", 10)
+        file6 = File(6, "wav", 10)
+
+        Solution.addFile(file1)
+        Solution.addFile(file2)
+        Solution.addFile(file3)
+        Solution.addFile(file4)
+        Solution.addFile(file5)
+        Solution.addFile(file6)
+
+        Solution.addFileToDisk(file1, 1)
+        Solution.addFileToDisk(file1, 3)
+        Solution.addFileToDisk(file2, 1)
+        Solution.addFileToDisk(file2, 2)
+        Solution.addFileToDisk(file3, 2)
+        Solution.addFileToDisk(file4, 3)
+        Solution.addFileToDisk(file5, 4)
+
+        res = Solution.getConflictingDisks()
+        self.assertEqual(3, len(res))
+        self.assertEqual(3, res[2])
+        self.assertEqual(2, res[1])
+        self.assertEqual(1, res[0])
+
+    def test_getConflictingDisks_empty_list(self):
+        """
+
+        :return:
+        """
+        disk1 = Disk(1, "DELL", 10, 200, 10)
+        disk2 = Disk(2, "DELL", 10, 200, 10)
+        disk3 = Disk(3, "DELL", 10, 200, 10)
+        disk4 = Disk(4, "DELL", 10, 200, 10)
+
+        Solution.addDisk(disk1)
+        Solution.addDisk(disk2)
+        Solution.addDisk(disk3)
+        Solution.addDisk(disk4)
+
+        file1 = File(1, "wav", 10)
+        file2 = File(2, "wav", 10)
+        file3 = File(3, "wav", 10)
+        file4 = File(4, "wav", 10)
+        file5 = File(5, "wav", 10)
+        file6 = File(6, "wav", 10)
+
+        Solution.addFile(file1)
+        Solution.addFile(file2)
+        Solution.addFile(file3)
+        Solution.addFile(file4)
+        Solution.addFile(file5)
+        Solution.addFile(file6)
+
+        Solution.addFileToDisk(file1, 1)
+        Solution.addFileToDisk(file2, 2)
+        Solution.addFileToDisk(file3, 3)
+        Solution.addFileToDisk(file4, 4)
+        Solution.addFileToDisk(file5, 5)
+
+        res = Solution.getConflictingDisks()
+        self.assertEqual(0, len(res))
+
+
 
 # *** DO NOT RUN EACH TEST MANUALLY ***
 if __name__ == '__main__':

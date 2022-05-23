@@ -95,6 +95,8 @@ def dropTables():
                      "DROP TABLE IF EXISTS RAM CASCADE;"
                      "DROP TABLE IF EXISTS DiskRAM CASCADE;"
                      "DROP TABLE IF EXISTS DiskFile CASCADE;"
+                     "DROP TABLE IF EXISTS Temp CASCADE;"
+
                      "COMMIT")
         conn.commit()
 
@@ -1149,10 +1151,129 @@ def getFilesCanBeAddedToDiskAndRAM(diskID: int) -> List[int]:
 
 
 def isCompanyExclusive(diskID: int) -> bool:
+    conn = None
+    rows_effected, result = 0, Connector.ResultSet()
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("BEGIN;"
+                        
+                        "CREATE TABLE Temp("
+                        "disk_id INTEGER,"
+                        "FOREIGN KEY (disk_id) REFERENCES Disk(disk_id));"
+                        "INSERT INTO Temp(disk_id) VALUES({disk_id});"
+                        "DROP TABLE IF EXISTS Temp ;"
+
+
+                        "CREATE VIEW RAM_IN_DISK_COMPANY AS "
+                        "SELECT DISTINCT RAM_company "
+                        "FROM RAM "
+                        "WHERE RAM.RAM_id IN "
+                        "(SELECT  RAM_id "
+                        "FROM DiskRAM "
+                        "GROUP BY disk_id, RAM_id "
+                        "HAVING disk_id = {disk_id}); "
+                        
+                        "CREATE VIEW DISK_COMPANY_NAME AS "
+                        "SELECT disk_company "
+                        "FROM Disk "
+                        "WHERE Disk.disk_id = {disk_id};"
+                        
+                        "CREATE VIEW RESULT AS "
+                        "SELECT disk_company "
+                        "FROM DISK_COMPANY_NAME, RAM_IN_DISK_COMPANY "
+                        "WHERE DISK_COMPANY_NAME.disk_company != RAM_IN_DISK_COMPANY.RAM_company;"
+                        
+                        "SELECT COUNT(disk_company) "
+                        "FROM RESULT "
+
+                        "COMMIT;").format(disk_id=sql.Literal(diskID))
+
+        rows_effected, result = conn.execute(query)
+        conn.commit()
+    except DatabaseException.ConnectionInvalid as e:
+        print(e)
+    except DatabaseException.NOT_NULL_VIOLATION as e:
+        print(e)
+    except DatabaseException.CHECK_VIOLATION as e:
+        print(e)
+    except DatabaseException.UNIQUE_VIOLATION as e:
+        print(e)
+    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
+        print(e)
+        return False
+    except Exception as e:
+        print(e)
+    finally:
+        # will happen any way after try termination or exception handling
+        conn.close()
+
+    if result.rows[0][0] != 0:
+        return False
+
     return True
 
 
 def getConflictingDisks() -> List[int]:
+    """
+    Returns a list containing conflicting disks' IDs (no duplicates).
+    Disks are conflicting if and only if they save at least one identical file.
+    The list should be ordered by diskIDs in ascending order.
+    Input: None
+
+    :return:
+    Output:
+    *List with the disks' IDs.
+    *Empty List in any other case.
+    """
+    conn = None
+    rows_effected, result = 0, Connector.ResultSet()
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("BEGIN;"
+                        
+                        "CREATE VIEW FILE_COUNT_OF_DISKS AS "
+                        "SELECT file_id, COUNT(disk_id) "
+                        "FROM DiskFile "
+                        "GROUP BY DiskFile.file_id; "
+                        
+                        "CREATE VIEW FILE_COUNT_GREATE_THAN_ONE AS "
+                        "SELECT file_id "
+                        "FROM FILE_COUNT_OF_DISKS "
+                        "WHERE FILE_COUNT_OF_DISKS.count>1; "
+                        
+                        "CREATE VIEW RESULT AS "
+                        "SELECT DISTINCT disk_id "
+                        "FROM DiskFile "
+                        "WHERE DiskFile.file_id IN (SELECT file_id FROM FILE_COUNT_GREATE_THAN_ONE) "
+                        "ORDER BY disk_id ASC;"
+                        
+                        "SELECT * "
+                        "FROM RESULT "
+                        
+                        "COMMIT;")
+
+        rows_effected, result = conn.execute(query)
+        conn.commit()
+    except DatabaseException.ConnectionInvalid as e:
+        print(e)
+    except DatabaseException.NOT_NULL_VIOLATION as e:
+        print(e)
+    except DatabaseException.CHECK_VIOLATION as e:
+        print(e)
+    except DatabaseException.UNIQUE_VIOLATION as e:
+        print(e)
+    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
+        print(e)
+    except Exception as e:
+        print(e)
+    finally:
+        # will happen any way after try termination or exception handling
+        conn.close()
+    ret_list = []
+    if (result.rows):
+        for res in result.rows:
+            ret_list.append(int(res[0]))
+        return ret_list
     return []
 
 
@@ -1168,6 +1289,18 @@ if __name__ == '__main__':
     dropTables()
     #
     # createTables()
+    # disk1 = Disk(1, "DELL", 10, 200, 10)
+    # ram1 = RAM(1, "DELL", 10)
+    # ram2 = RAM(2, "DELL", 20)
+    # ram3 = RAM(3, "DELL", 30)
+    # # addDisk(disk1)
+    # # addRAM(ram1)
+    # # addRAM(ram2)
+    # # addRAM(ram3)
+    # # addRAMToDisk(1, 1)
+    # # addRAMToDisk(2, 1)
+    # # addRAMToDisk(3, 1)
+    # res = isCompanyExclusive(disk1.getDiskID())
 
     # ram1 = RAM(1, "asaf", 1)
     # addRAM(ram1)
