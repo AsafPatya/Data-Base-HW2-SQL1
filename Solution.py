@@ -1156,7 +1156,7 @@ def isCompanyExclusive(diskID: int) -> bool:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("BEGIN;"
-                        
+
                         "CREATE TABLE Temp("
                         "disk_id INTEGER,"
                         "FOREIGN KEY (disk_id) REFERENCES Disk(disk_id));"
@@ -1172,17 +1172,17 @@ def isCompanyExclusive(diskID: int) -> bool:
                         "FROM DiskRAM "
                         "GROUP BY disk_id, RAM_id "
                         "HAVING disk_id = {disk_id}); "
-                        
+
                         "CREATE VIEW DISK_COMPANY_NAME AS "
                         "SELECT disk_company "
                         "FROM Disk "
                         "WHERE Disk.disk_id = {disk_id};"
-                        
+
                         "CREATE VIEW RESULT AS "
                         "SELECT disk_company "
                         "FROM DISK_COMPANY_NAME, RAM_IN_DISK_COMPANY "
                         "WHERE DISK_COMPANY_NAME.disk_company != RAM_IN_DISK_COMPANY.RAM_company;"
-                        
+
                         "SELECT COUNT(disk_company) "
                         "FROM RESULT "
 
@@ -1230,42 +1230,54 @@ def getConflictingDisks() -> List[int]:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("BEGIN;"
-                        
+
                         "CREATE VIEW FILE_COUNT_OF_DISKS AS "
                         "SELECT file_id, COUNT(disk_id) "
                         "FROM DiskFile "
                         "GROUP BY DiskFile.file_id; "
-                        
+
                         "CREATE VIEW FILE_COUNT_GREATE_THAN_ONE AS "
                         "SELECT file_id "
                         "FROM FILE_COUNT_OF_DISKS "
                         "WHERE FILE_COUNT_OF_DISKS.count>1; "
-                        
+
                         "CREATE VIEW RESULT AS "
                         "SELECT DISTINCT disk_id "
                         "FROM DiskFile "
                         "WHERE DiskFile.file_id IN (SELECT file_id FROM FILE_COUNT_GREATE_THAN_ONE) "
                         "ORDER BY disk_id ASC;"
-                        
+
                         "SELECT * "
                         "FROM RESULT "
-                        
+
                         "COMMIT;")
 
         rows_effected, result = conn.execute(query)
         conn.commit()
     except DatabaseException.ConnectionInvalid as e:
         print(e)
+        return []
+
     except DatabaseException.NOT_NULL_VIOLATION as e:
         print(e)
+        return []
+
     except DatabaseException.CHECK_VIOLATION as e:
         print(e)
+        return []
+
     except DatabaseException.UNIQUE_VIOLATION as e:
         print(e)
+        return []
+
     except DatabaseException.FOREIGN_KEY_VIOLATION as e:
         print(e)
+        return []
+
     except Exception as e:
         print(e)
+        return []
+
     finally:
         # will happen any way after try termination or exception handling
         conn.close()
@@ -1302,13 +1314,13 @@ def mostAvailableDisks() -> List[int]:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("BEGIN;"
-                        
+
                         "CREATE VIEW  DISK_ID_DISK_SPEED_NUMBER_OF_FILES AS "
                         "SELECT disk_id, disk_speed, count(file_id) "
                         "FROM Disk, File "
                         "GROUP BY Disk.disk_id, Disk.disk_speed, File.file_id "
                         "HAVING Disk.disk_free_space >= File.file_size;"
-                        
+
                         "CREATE VIEW RESULT AS "
                         "SELECT disk_id, disk_speed, COUNT(count) "
                         "FROM DISK_ID_DISK_SPEED_NUMBER_OF_FILES "
@@ -1317,6 +1329,102 @@ def mostAvailableDisks() -> List[int]:
 
                         "SELECT disk_id FROM RESULT "
                         "COMMIT;")
+
+        rows_effected, result = conn.execute(query)
+        conn.commit()
+    except DatabaseException.ConnectionInvalid as e:
+        print(e)
+        return []
+    except DatabaseException.NOT_NULL_VIOLATION as e:
+        print(e)
+        return []
+
+    except DatabaseException.CHECK_VIOLATION as e:
+        print(e)
+        return []
+
+    except DatabaseException.UNIQUE_VIOLATION as e:
+        print(e)
+        return []
+
+    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
+        print(e)
+        return []
+
+    except Exception as e:
+        print(e)
+        return []
+
+    finally:
+        # will happen any way after try termination or exception handling
+        conn.close()
+
+    return_list = []
+
+    if result.rows:
+        # the list is not empty
+        for res in result.rows:
+            return_list.append(int(res[0]))
+        return return_list
+
+    return []
+
+
+def getCloseFiles(fileID: int) -> List[int]:
+    """
+    Returns a list of the 10 "closest files" to the file with fileID.
+    Close files are defined as files which are saved on at least (>=) 50% of the disks the file with fileID does.
+    Note that a file isn’t a close file of itself.
+    The list should be ordered by IDs in ascending order.
+    Input: The ID of a file.
+
+    :param fileID:
+    :return:
+    Output:
+    *List with the files’ IDs that meet the conditions described above (if there are less than 10 files,
+     return a List with the <10 file IDs).
+    *Empty List in any other case. Note: files can be close in an empty way (file in question isn’t saved on any disk).
+    """
+    conn = None
+    rows_effected, result = 0, Connector.ResultSet()
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("BEGIN;"
+                        
+                        "CREATE VIEW DiskInFile AS "
+                        "SELECT disk_id "
+                        "FROM DiskFile "
+                        "GROUP BY DiskFile.file_id, DiskFile.disk_id "
+                        "HAVING DiskFile.file_id = {file_id}; "
+                        
+                        
+                        
+                        "CREATE VIEW COUNT_DISK_PER_FILE AS "
+                        "SELECT file_id, COUNT(disk_id) "
+                        "FROM DiskFile "
+                        "GROUP BY DiskFile.file_id, DiskFile.disk_id "
+                        "HAVING DiskFile.disk_id IN (SELECT disk_id FROM DiskInFile) "
+                        "AND DiskFile.file_id != {file_id}; "
+                        
+                        "CREATE VIEW MID_VALUE AS "
+                        "SELECT COUNT(disk_id)/2.0 "
+                        "FROM DiskInFile; "
+                        
+                        "CREATE VIEW COUNT_DISK_PER_FILE_ASC AS "
+                        "SELECT COUNT_DISK_PER_FILE.file_id, COUNT(count) "
+                        "FROM COUNT_DISK_PER_FILE "
+                        "GROUP BY COUNT_DISK_PER_FILE.file_id "
+                        "ORDER BY count DESC;"
+                        
+                        "CREATE VIEW RESULT AS "
+                        "SELECT file_id "
+                        "FROM COUNT_DISK_PER_FILE_ASC "
+                        "WHERE COUNT_DISK_PER_FILE_ASC.count >= (SELECT count FROM MID_VALUE)"
+                        "ORDER BY file_id ASC LIMIT 10; "
+                        
+                        
+                        "SELECT file_id FROM RESULT "
+                        "COMMIT;").format(file_id=sql.Literal(fileID))
 
         rows_effected, result = conn.execute(query)
         conn.commit()
@@ -1335,156 +1443,16 @@ def mostAvailableDisks() -> List[int]:
     finally:
         # will happen any way after try termination or exception handling
         conn.close()
-    ret_list=[]
-    if (result.rows):
-        for res in result.rows:
-            ret_list.append(int(res[0]))
-        return ret_list
-    return []
+    return_list = []
 
-def getCloseFiles(fileID: int) -> List[int]:
+    if result.rows:
+        # the list is not empty
+        for res in result.rows:
+            return_list.append(int(res[0]))
+        return return_list
+
     return []
 
 
 if __name__ == '__main__':
     dropTables()
-    #
-    # createTables()
-    # disk1 = Disk(1, "DELL", 10, 200, 10)
-    # ram1 = RAM(1, "DELL", 10)
-    # ram2 = RAM(2, "DELL", 20)
-    # ram3 = RAM(3, "DELL", 30)
-    # # addDisk(disk1)
-    # # addRAM(ram1)
-    # # addRAM(ram2)
-    # # addRAM(ram3)
-    # # addRAMToDisk(1, 1)
-    # # addRAMToDisk(2, 1)
-    # # addRAMToDisk(3, 1)
-    # res = isCompanyExclusive(disk1.getDiskID())
-
-    # ram1 = RAM(1, "asaf", 1)
-    # addRAM(ram1)
-    # deleteRAM(ram1.getRamID())
-    #
-    # disk1 = Disk(1, "DELL", 10, 10, 10)
-    # disk2 = Disk(2, "DELL", 10, 10, 10)
-    # first_size_disk1 = disk1.getFreeSpace()
-    # first_size_disk2 = disk2.getFreeSpace()
-    # file1 = File(1, "wav", 8)
-    # addDisk(disk1)
-    # addDisk(disk2)
-    # addFile(file1)
-    # addFileToDisk(file1, disk1.getDiskID())
-    # addFileToDisk(file1, disk2.getDiskID())
-    # deleteFile(file1)
-
-    # clearTables()
-    #
-    # n = 10
-    # disk1 = Disk(1, "DELL", 10, 100000, 10)
-    # addDisk(disk1)
-    #
-    # files = []
-    # for file_id in range(1, n+1):
-    #     files.append(File(file_id, "A", file_id))
-    #
-    # for file_id in range(1, n+1):
-    #     addFile(files[file_id-1])
-    #
-    # for file_id in range(1, n+1):
-    #     addFileToDisk(files[file_id-1], disk1.getDiskID())
-    #
-    # result = averageFileSizeOnDisk(disk1.getDiskID())
-    # expected = sum([i for i in range(1, n+1)])
-    # expected = expected / n
-    # print(result)
-    # print(expected)
-
-    #
-    # disk1 = Disk(1, "DELL", 10, 200, 10)
-    # file1 = File(1, "wav", 10)
-    # file2 = File(2, "wav", 20)
-    # file3 = File(3, "wav", 30)
-    # file4 = File(4, "wav", 40)
-    # file5 = File(5, "wav", 50)
-    #
-    # addDisk(disk1)
-    # addFile(file1)
-    # addFile(file2)
-    # addFile(file3)
-    # addFile(file4)
-    # addFile(file5)
-    #
-    # addFileToDisk(file1, disk1.getDiskID())
-    # addFileToDisk(file2, disk1.getDiskID())
-    # addFileToDisk(file3, disk1.getDiskID())
-    # addFileToDisk(file4, disk1.getDiskID())
-    # addFileToDisk(file5, disk1.getDiskID())
-    #
-    # result = averageFileSizeOnDisk(disk1.getDiskID())
-    #
-    # x = 10 + 20 + 30 + 40 + 50
-    # x = x / 5
-    # print(x)
-    # print(result)
-
-    # addRAMToDisk(ram1.getRamID(), disk1.getDiskID())
-    # result = removeRAMFromDisk(ram1.getRamID(), disk1.getDiskID())
-    # #
-    # # # #
-    # disk1 = Disk(1, "DELL", 10, 10, 10)
-    # first_free_space_disk1 = disk1.getFreeSpace()
-    # file1 = File(1, "wav", 8)
-    # addDisk(disk1)
-    # addFile(file1)
-    # addFileToDisk(file1, disk1.getDiskID())
-    # new_space_disk = getDiskByID(disk1.getDiskID()).getFreeSpace()
-    # result = removeFileFromDisk(file1, disk1.getDiskID())
-    # new_space_disk_tag = getDiskByID(disk1.getDiskID()).getFreeSpace()
-
-    # disk1 = Disk(1, "DELL", 10, 10, 10)
-    # ram1 = RAM(1, "wav", 15)
-    # addDisk(disk1)
-    # addRAM(ram1)
-    # addRAMToDisk(ram1.getRamID(), disk1.getDiskID())
-    # result = addRAMToDisk(ram1.getRamID(), disk1.getDiskID())
-
-    # disk1 = Disk(1, "DELL", 10, 10, 10)
-    # ram1 = RAM(1, "wav", 15)
-    # addDisk(disk1)
-    # result = addRAMToDisk(ram1.getRamID(), disk1.getDiskID())
-
-    # disk1 = Disk(1, "DELL", 10, 10, 10)
-    # ram1 = RAM(1, "wav", 15)
-    # addDisk(disk1)
-    # addRAM(ram1)
-    # result = addRAMToDisk(ram1.getRamID(), disk1.getDiskID())
-
-    # disk1 = Disk(4, "DELL", 10, 10, 10)
-    # file1 = File(1, "wav", 8)
-    # file2 = File(8, "wav", 8)
-    # #
-    # # addDisk(disk1)
-    # # addFile(file1)
-    #
-    # addFileToDisk(file2, disk1.getDiskID())
-
-    # result = addFileToDisk(file1, disk1.getDiskID())
-
-    # clearTables()
-    # file1 = File(1.5, "asaf", 1)
-    # addFile(file1)
-    # disk1 = Disk(1, "Elbit", 100, 100, 100)
-    # disk2 = Disk(2, "Elbit", 100, 100, 100)
-    #
-    # ram1 = RAM(1, "eblbit", 100)
-    # addDiskAndFile(disk1, file1)
-    # addDiskAndFile(disk2, file1)
-
-    # addFile(file1)
-    # addDisk(disk1)
-    # addRAM(ram1)
-    # file12 = getFileByID(1)
-    # disk12 = getDiskByID(2)
-    # ram12 = getRAMByID(2)

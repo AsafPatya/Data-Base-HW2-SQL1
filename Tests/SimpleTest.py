@@ -1074,8 +1074,122 @@ class Test(AbstractTest):
         self.assertEqual(0, len(res))
 
     ############################################ getCloseFiles #######################################
+    def test_getCloseFiles_limit_to_10(self):
+        disk1 = Disk(1, "DELL", 10, 1000, 10)
+        disk2 = Disk(2, "DELL", 10, 1000, 10)
+        disk3 = Disk(3, "DELL", 10, 1000, 10)
+        Solution.addDisk(disk1)
+        Solution.addDisk(disk2)
+        Solution.addDisk(disk3)
+        file1 = File(1, "wav", 10)
+        file2 = File(2, "wav", 20)
+        file3 = File(3, "wav", 30)
+        file4 = File(4, "wav", 40)
+        file5 = File(5, "wav", 50)
+        file6 = File(6, "wav", 60)
+        file7 = File(7, "wav", 10)
+        file8 = File(8, "wav", 20)
+        file9 = File(9, "wav", 30)
+        file10 = File(10, "wav", 40)
+        file11 = File(11, "wav", 50)
+        file12 = File(12, "wav", 60)
 
+        Solution.addFile(file1)
+        Solution.addFile(file2)
+        Solution.addFile(file3)
+        Solution.addFile(file4)
+        Solution.addFile(file5)
+        Solution.addFile(file6)
+        Solution.addFile(file7)
+        Solution.addFile(file8)
+        Solution.addFile(file9)
+        Solution.addFile(file10)
+        Solution.addFile(file11)
+        Solution.addFile(file12)
+
+        Solution.addFileToDisk(file1, 1)
+        Solution.addFileToDisk(file2, 1)
+        Solution.addFileToDisk(file3, 1)
+        Solution.addFileToDisk(file4, 1)
+        Solution.addFileToDisk(file5, 1)
+        Solution.addFileToDisk(file6, 1)
+        Solution.addFileToDisk(file7, 1)
+        Solution.addFileToDisk(file8, 1)
+        Solution.addFileToDisk(file9, 1)
+        Solution.addFileToDisk(file10, 1)
+        Solution.addFileToDisk(file11, 1)
+        Solution.addFileToDisk(file12, 1)
+
+        res = Solution.getCloseFiles(1)
+        expected = [i for i in range(2, 12)]
+        self.assertEqual(len(expected), len(res), "length")
+        for i in range(len(expected)):
+            self.assertEqual(expected[i], res[i])
+
+    def test_getCloseFiles_regular_case(self):
+        disk1 = Disk(1, "DELL", 10, 1000, 10)
+        disk2 = Disk(2, "DELL", 10, 1000, 10)
+        disk3 = Disk(3, "DELL", 10, 1000, 10)
+        Solution.addDisk(disk1)
+        Solution.addDisk(disk2)
+        Solution.addDisk(disk3)
+        file1 = File(1, "wav", 1)
+        file2 = File(2, "wav", 2)
+        file3 = File(3, "wav", 3)
+        file4 = File(4, "wav", 3)
+
+        Solution.addFile(file1)
+        Solution.addFile(file2)
+        Solution.addFile(file3)
+        Solution.addFile(file4)
+
+        Solution.addFileToDisk(file1, 1)
+        Solution.addFileToDisk(file1, 2)
+        Solution.addFileToDisk(file2, 1)
+        Solution.addFileToDisk(file2, 3)
+        Solution.addFileToDisk(file3, 2)
+        Solution.addFileToDisk(file3, 3)
+        Solution.addFileToDisk(file4, 3)
+
+        res = Solution.getCloseFiles(1)
+        expected = [2, 3]
+        self.assertEqual(len(expected), len(res), "length")
+        for i in range(len(expected)):
+            self.assertEqual(expected[i], res[i])
+
+    def test_getCloseFiles_given_file_not_save_in_any_disk(self):
+        disk1 = Disk(1, "DELL", 10, 1000, 10)
+        disk2 = Disk(2, "DELL", 10, 1000, 10)
+        disk3 = Disk(3, "DELL", 10, 1000, 10)
+        Solution.addDisk(disk1)
+        Solution.addDisk(disk2)
+        Solution.addDisk(disk3)
+        file1 = File(1, "wav", 1)
+        file2 = File(2, "wav", 2)
+        file3 = File(3, "wav", 3)
+        file4 = File(4, "wav", 3)
+
+        Solution.addFile(file1)
+        Solution.addFile(file2)
+        Solution.addFile(file3)
+        Solution.addFile(file4)
+
+        # Solution.addFileToDisk(file1, 1)
+        # Solution.addFileToDisk(file1, 2)
+        Solution.addFileToDisk(file2, 1)
+        Solution.addFileToDisk(file2, 3)
+        Solution.addFileToDisk(file3, 2)
+        Solution.addFileToDisk(file3, 3)
+        Solution.addFileToDisk(file4, 3)
+
+        res = Solution.getCloseFiles(1)
+        expected = [2, 3, 4]
+        self.assertEqual(len(expected), len(res), "length")
+        for i in range(len(expected)):
+            self.assertEqual(expected[i], res[i])
 
 # *** DO NOT RUN EACH TEST MANUALLY ***
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2, exit=False)
