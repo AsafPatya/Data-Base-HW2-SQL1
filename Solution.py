@@ -1269,17 +1269,78 @@ def getConflictingDisks() -> List[int]:
     finally:
         # will happen any way after try termination or exception handling
         conn.close()
-    ret_list = []
+
+    return_list = []
+
+    if result.rows:
+        # the list is not empty
+        for res in result.rows:
+            return_list.append(int(res[0]))
+        return return_list
+
+    return []
+
+
+def mostAvailableDisks() -> List[int]:
+    """
+    Returns a list of up to 5 disks' IDs that can save the most files (as singles).
+    A disk can save a file if and only if the file’s size is not larger than the free space on disk
+    (even if it’s already saved on the disk).
+    The list should be ordered by:
+    • Main sort by number of files in descending order.
+    • Secondary sort by disk's speed in descending order.
+    • Final sort by diskID in ascending order.
+    Input: None
+
+    :return:
+    Output:
+    *List with the disks' IDs that satisfy the conditions above (if there are less than 5 disks, return a List with the <5 disks).
+    *Empty List in any other case.
+    """
+    conn = None
+    rows_effected, result = 0, Connector.ResultSet()
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL("BEGIN;"
+                        
+                        "CREATE VIEW  DISK_ID_DISK_SPEED_NUMBER_OF_FILES AS "
+                        "SELECT disk_id, disk_speed, count(file_id) "
+                        "FROM Disk, File "
+                        "GROUP BY Disk.disk_id, Disk.disk_speed, File.file_id "
+                        "HAVING Disk.disk_free_space >= File.file_size;"
+                        
+                        "CREATE VIEW RESULT AS "
+                        "SELECT disk_id, disk_speed, COUNT(count) "
+                        "FROM DISK_ID_DISK_SPEED_NUMBER_OF_FILES "
+                        "GROUP BY disk_id, disk_speed "
+                        "ORDER BY count DESC, disk_speed DESC, disk_id ASC LIMIT 5; "
+
+                        "SELECT disk_id FROM RESULT "
+                        "COMMIT;")
+
+        rows_effected, result = conn.execute(query)
+        conn.commit()
+    except DatabaseException.ConnectionInvalid as e:
+        print(e)
+    except DatabaseException.NOT_NULL_VIOLATION as e:
+        print(e)
+    except DatabaseException.CHECK_VIOLATION as e:
+        print(e)
+    except DatabaseException.UNIQUE_VIOLATION as e:
+        print(e)
+    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
+        print(e)
+    except Exception as e:
+        print(e)
+    finally:
+        # will happen any way after try termination or exception handling
+        conn.close()
+    ret_list=[]
     if (result.rows):
         for res in result.rows:
             ret_list.append(int(res[0]))
         return ret_list
     return []
-
-
-def mostAvailableDisks() -> List[int]:
-    return []
-
 
 def getCloseFiles(fileID: int) -> List[int]:
     return []

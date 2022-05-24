@@ -971,6 +971,109 @@ class Test(AbstractTest):
         res = Solution.getConflictingDisks()
         self.assertEqual(0, len(res))
 
+    def test_getConflictingDisks_empty_list_no_disks(self):
+        """
+
+        :return:
+        """
+        res = Solution.getConflictingDisks()
+        self.assertEqual(0, len(res))
+
+    def test_getConflictingDisks_big_system(self):
+        """
+
+        :return:
+        """
+        n = 50
+        disks = [Disk(i, "DELL", 10, 200, 10) for i in range(1, n+1)]
+        files = [File(i, "wav", 10) for i in range(1, n+1)]
+        for i in range(n):
+            Solution.addFile(files[i])
+            Solution.addDisk(disks[i])
+        for i in range(1, n):
+            Solution.addFileToDisk(files[i], i)
+        files.append(File(n+1, "wav", 10))
+        Solution.addFile(files[n])
+        for i in range(1, n+1):
+            Solution.addFileToDisk(files[n], i)
+        res = Solution.getConflictingDisks()
+        expected = [i for i in range(1, n+1)]
+        self.assertEqual(len(expected), len(res))
+        for i in range(n):
+            self.assertEqual(res[i], expected[i])
+
+    ############################################ mostAvailableDisks #######################################
+    def test_mostAvailableDisks_regular_case(self):
+        disk1 = Disk(1, "DELL", 10, 1, 10)
+        disk2 = Disk(2, "DELL", 10, 2, 10)
+        disk3 = Disk(3, "DELL", 10, 3, 10)
+        disk4 = Disk(4, "DELL", 10, 4, 10)
+        Solution.addDisk(disk1)
+        Solution.addDisk(disk2)
+        Solution.addDisk(disk3)
+        Solution.addDisk(disk4)
+        file1 = File(1, "wav", 1)
+        file2 = File(2, "wav", 2)
+        file3 = File(3, "wav", 3)
+        file4 = File(4, "wav", 4)
+        file5 = File(5, "wav", 5)
+        file6 = File(6, "wav", 6)
+        Solution.addFile(file1)
+        Solution.addFile(file2)
+        Solution.addFile(file3)
+        Solution.addFile(file4)
+        Solution.addFile(file5)
+        Solution.addFile(file6)
+        res = Solution.mostAvailableDisks()
+        expected = [4, 3, 2, 1]
+        self.assertEqual(len(expected), len(res))
+        for i in range(4):
+            self.assertEqual(res[i], expected[i])
+
+    def test_mostAvailableDisks_regular_case1(self):
+        disk1 = Disk(1, "DELL", 10, 70, 70)
+        disk2 = Disk(2, "DELL", 10, 5, 5)
+        disk3 = Disk(3, "DELL", 10, 5, 5)
+        disk4 = Disk(4, "DELL", 10, 5, 5)
+        Solution.addDisk(disk1)
+        Solution.addDisk(disk2)
+        Solution.addDisk(disk3)
+        Solution.addDisk(disk4)
+        file1 = File(1, "wav", 10)
+        file2 = File(2, "wav", 20)
+        file3 = File(3, "wav", 30)
+        file4 = File(4, "wav", 40)
+        file5 = File(5, "wav", 50)
+        file6 = File(6, "wav", 60)
+        Solution.addFile(file1)
+        Solution.addFile(file2)
+        Solution.addFile(file3)
+        Solution.addFile(file4)
+        Solution.addFile(file5)
+        Solution.addFile(file6)
+        res = Solution.mostAvailableDisks()
+        expected = [1]
+        self.assertEqual(len(expected), len(res), "length")
+        for i in range(1):
+            self.assertEqual(expected[i], res[i])
+
+    def test_mostAvailableDisks_no_disks(self):
+        res = Solution.mostAvailableDisks()
+        self.assertEqual(0, len(res))
+
+    def test_mostAvailableDisks_no_files(self):
+        disk1 = Disk(1, "DELL", 10, 1, 10)
+        disk2 = Disk(2, "DELL", 10, 2, 10)
+        disk3 = Disk(3, "DELL", 10, 3, 10)
+        disk4 = Disk(4, "DELL", 10, 4, 10)
+        Solution.addDisk(disk1)
+        Solution.addDisk(disk2)
+        Solution.addDisk(disk3)
+        Solution.addDisk(disk4)
+        res = Solution.mostAvailableDisks()
+        self.assertEqual(0, len(res))
+
+    ############################################ getCloseFiles #######################################
 
 
 # *** DO NOT RUN EACH TEST MANUALLY ***
