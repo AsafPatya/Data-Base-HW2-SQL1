@@ -978,29 +978,27 @@ def getConflictingDisks() -> List[int]:
     return []
 
 
-
-
 def mostAvailableDisks() -> List[int]:
     conn = None
     rows_effected, result = 0, Connector.ResultSet()
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("BEGIN;"
-                        "DROP VIEW IF EXISTS R8 CASCADE; "
-                        "DROP VIEW IF EXISTS R9 CASCADE; "
+                        "DROP VIEW IF EXISTS DISK_ID_DISK_SPEED_NUMBER_OF_FILES CASCADE; "
+                        "DROP VIEW IF EXISTS RESULT CASCADE; "
 
-                        "CREATE VIEW R8 AS "
-                        "SELECT d1.disk_id, d1.disk_speed,Count(f1.file_id) "
-                        "FROM Disk d1 LEFT JOIN File f1 ON disk_free_space >= file_size "
-                        "GROUP BY d1.disk_id; "
+                        "CREATE VIEW DISK_ID_DISK_SPEED_NUMBER_OF_FILES AS "
+                        "SELECT disk_id, disk_speed, count(file_id) "
+                        "FROM Disk LEFT JOIN File ON Disk.disk_free_space >= File.file_size "
+                        "GROUP BY Disk.disk_id; "
 
-                        "CREATE VIEW R9 AS SELECT disk_id,disk_speed, R8.count FROM R8 "
-                        "GROUP BY disk_id,disk_speed,R8.count "
-                        "ORDER BY count DESC, "
-                        "disk_speed DESC,"
-                        "disk_id ASC LIMIT 5 ;"
-                        
-                        "SELECT disk_id FROM R9 "
+                        "CREATE VIEW RESULT AS "
+                        "SELECT disk_id, disk_speed, DISK_ID_DISK_SPEED_NUMBER_OF_FILES.count "
+                        "FROM DISK_ID_DISK_SPEED_NUMBER_OF_FILES "
+                        "GROUP BY disk_id, disk_speed ,DISK_ID_DISK_SPEED_NUMBER_OF_FILES.count "
+                        "ORDER BY count DESC, disk_speed DESC, disk_id ASC LIMIT 5; "
+
+                        "SELECT disk_id FROM RESULT "
                         "COMMIT;")
 
         rows_effected, result = conn.execute(query)
@@ -1038,56 +1036,55 @@ def getCloseFiles(fileID: int) -> List[int]:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("BEGIN;"
-                        "DROP VIEW IF EXISTS FileInDisk CASCADE; "
-                        "DROP VIEW IF EXISTS allFiles CASCADE; "
-                        "DROP VIEW IF EXISTS CountCommon CASCADE; "
-                        "DROP VIEW IF EXISTS Count2 CASCADE; "
-                        "DROP VIEW IF EXISTS comb CASCADE; "
-                        "DROP VIEW IF EXISTS Count3 CASCADE; "
-                        "DROP VIEW IF EXISTS returnVal CASCADE; "
-
-                        "CREATE VIEW FileInDisk AS "
-                        "SELECT file_id,disk_id "
-                        "FROM DiskFile "
-                        "GROUP BY file_id,disk_id "
-                        "HAVING file_id = {file_id}; "
+                        "DROP VIEW IF EXISTS DiskInFile CASCADE; "
+                        "DROP VIEW IF EXISTS FILE_ID_COUNT_0 CASCADE; "
+                        "DROP VIEW IF EXISTS COUNT_DISK_PER_FILE CASCADE; "
+                        "DROP VIEW IF EXISTS COUNT_DISK_PER_FILE_BIGGER_THAN_ZERO CASCADE; "
+                        "DROP VIEW IF EXISTS TEMP_VIEW CASCADE; "
+                        "DROP VIEW IF EXISTS TEMP_VIEW_2 CASCADE; "
+                        "DROP VIEW IF EXISTS RESULT CASCADE; "
                         
-                        "CREATE VIEW CountCommon AS "
-                        "SELECT file_id,COUNT(disk_id) "
+                        "CREATE VIEW DiskInFile AS "
+                        "SELECT disk_id "
                         "FROM DiskFile "
-                        "GROUP BY file_id ,disk_id "
-                        "HAVING DiskFile.disk_id IN (SELECT disk_id FROM FileInDisk) AND file_id !={file_id} ;"
-
-
-                        "CREATE VIEW allFiles AS "
+                        "GROUP BY DiskFile.file_id, DiskFile.disk_id "
+                        "HAVING DiskFile.file_id = {file_id}; "
+                        
+                        "CREATE VIEW FILE_ID_COUNT_0 AS "
                         "SELECT file_id, 0 count "
                         "FROM File "
-                        "WHERE file_id !={file_id} ;"
-
-
-                        # count shared files 
-
-                        "CREATE VIEW Count2 AS "
-                        "SELECT CountCommon.file_id, COUNT(count)"
-                        " FROM CountCommon "
-                        "GROUP BY CountCommon.file_id ;"
-
-                        "CREATE VIEW comb AS "
-                        "SELECT Distinct allFiles.file_id, "
-                        "COALESCE((SELECT count FROM Count2 WHERE allFiles.file_id = Count2.file_id),0) count "
-                        "FROM allFiles ;"
-
-                        "CREATE VIEW Count3 AS "
-                        "SELECT file_id "
-                        "FROM comb "
-                        "WHERE count >= (SELECT count(disk_id)/2.0 FROM FileInDisk); "
-
-                        "CREATE VIEW returnVal AS "
-                        "SELECT file_id "
-                        "FROM Count3 "
-                        "ORDER BY file_id ASC LIMIT 10;"
+                        "WHERE File.file_id != {file_id} ;"
                         
-                        "SELECT * FROM returnVal  "
+                        "CREATE VIEW COUNT_DISK_PER_FILE AS "
+                        "SELECT file_id, COUNT(disk_id) "
+                        "FROM DiskFile "
+                        "GROUP BY DiskFile.file_id, DiskFile.disk_id "
+                        "HAVING DiskFile.disk_id IN (SELECT disk_id FROM DiskInFile) "
+                        "AND DiskFile.file_id != {file_id}; "
+                        
+                        "CREATE VIEW COUNT_DISK_PER_FILE_BIGGER_THAN_ZERO AS "
+                        "SELECT COUNT_DISK_PER_FILE.file_id, COUNT(count) "
+                        "FROM COUNT_DISK_PER_FILE "
+                        "GROUP BY COUNT_DISK_PER_FILE.file_id ;"
+
+                        "CREATE VIEW TEMP_VIEW AS "
+                        "SELECT Distinct FILE_ID_COUNT_0.file_id, "
+                        "COALESCE((SELECT count "
+                        "FROM COUNT_DISK_PER_FILE_BIGGER_THAN_ZERO "
+                        "WHERE FILE_ID_COUNT_0.file_id = COUNT_DISK_PER_FILE_BIGGER_THAN_ZERO.file_id),0) count "
+                        "FROM FILE_ID_COUNT_0 ;"
+
+                        "CREATE VIEW TEMP_VIEW_2 AS "
+                        "SELECT file_id "
+                        "FROM TEMP_VIEW "
+                        "WHERE TEMP_VIEW.count >= (SELECT count(disk_id)/2.0 FROM DiskInFile); "
+                        
+                        "CREATE VIEW RESULT AS "
+                        "SELECT file_id "
+                        "FROM TEMP_VIEW_2 "
+                        "ORDER BY TEMP_VIEW_2.file_id ASC LIMIT 10;"
+                        
+                        "SELECT * FROM RESULT "
                         "COMMIT;").format(file_id=sql.Literal(fileID))
 
         rows_effected, result = conn.execute(query)
