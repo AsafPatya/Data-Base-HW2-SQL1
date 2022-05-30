@@ -48,16 +48,9 @@ def createTables():
                      "COMMIT;")
         conn.commit()
 
-    except DatabaseException.ConnectionInvalid as e:
-        return Status.ERROR
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        return Status.BAD_PARAMS
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        return Status.BAD_PARAMS
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        return Status.ALREADY_EXISTS
-    except DatabaseException.CHECK_VIOLATION as e:
-        return Status.BAD_PARAMS
+    except Exception as e:
+        print(e)
+
     finally:
         # will happen any way after try termination or exception handling
         conn.close()
@@ -67,19 +60,12 @@ def clearTables():
     conn = None
     try:
         conn = Connector.DBConnector()
-        conn.execute("TRUNCATE File, Disk,RAM ,DiskRAM,DiskFile")
+        conn.execute("TRUNCATE File, Disk,RAM , DiskRAM, DiskFile")
         conn.commit()
 
-    except DatabaseException.ConnectionInvalid as e:
-        return Status.ERROR
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        return Status.BAD_PARAMS
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        return Status.BAD_PARAMS
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        return Status.ALREADY_EXISTS
-    except DatabaseException.CHECK_VIOLATION as e:
-        return Status.BAD_PARAMS
+    except Exception as e:
+        print(e)
+
     finally:
         # will happen any way after try termination or exception handling
         conn.close()
@@ -100,16 +86,9 @@ def dropTables():
                      "COMMIT")
         conn.commit()
 
-    except DatabaseException.ConnectionInvalid as e:
-        return Status.ERROR
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        return Status.BAD_PARAMS
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        return Status.BAD_PARAMS
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        return Status.ALREADY_EXISTS
-    except DatabaseException.CHECK_VIOLATION as e:
-        return Status.BAD_PARAMS
+    except Exception as e:
+        print(e)
+
     finally:
         # will happen any way after try termination or exception handling
         conn.close()
@@ -125,24 +104,20 @@ def addFile(file: File) -> Status:
                                                              size=sql.Literal(file.getSize()))
         rows_effected, _ = conn.execute(query)
         conn.commit()
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-        return Status.ERROR
     except DatabaseException.NOT_NULL_VIOLATION as e:
-        print(e)
         return Status.BAD_PARAMS
     except DatabaseException.CHECK_VIOLATION as e:
-        print(e)
         return Status.BAD_PARAMS
+
     except DatabaseException.UNIQUE_VIOLATION as e:
-        print(e)
         return Status.ALREADY_EXISTS
     except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        print(e)
         return Status.ALREADY_EXISTS
+
+    except DatabaseException.ConnectionInvalid as e:
+        return Status.ERROR
     except Exception as e:
-        print(e)
-        return Status.BAD_PARAMS
+        return Status.ERROR
     finally:
         # will happen any way after code try termination or exception handling
         conn.close()
@@ -158,18 +133,9 @@ def getFileByID(fileID: int) -> File:
         conn.commit()
         # rows_effected is the number of rows received by the SELECT
 
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        print(e)
-    except DatabaseException.CHECK_VIOLATION as e:
-        print(e)
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        print(e)
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        print(e)
     except Exception as e:
-        print(e)
+        return File.badFile()
+
     finally:
         conn.close()
         if result.rows:
@@ -199,6 +165,9 @@ def deleteFile(file: File) -> Status:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("BEGIN;"
+                        
+                        "DROP VIEW IF EXISTS FILE_SIZE CASCADE; "
+                        "DROP VIEW IF EXISTS DISK_HAVING_FILE CASCADE; "
 
                         "CREATE VIEW FILE_SIZE AS "
                         "SELECT file_size "
@@ -220,24 +189,9 @@ def deleteFile(file: File) -> Status:
                         "COMMIT;").format(file_id=sql.Literal(file.getFileID()))
         conn.execute(query)
         conn.commit()
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-        return Status.ERROR
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        print(e)
-        return Status.OK
-    except DatabaseException.CHECK_VIOLATION as e:
-        print(e)
-        return Status.OK
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        print(e)
-        return Status.OK
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        print(e)
-        return Status.OK
+
     except Exception as e:
-        print(e)
-        return Status.OK
+        return Status.ERROR
     finally:
         # will happen any way after code try termination or exception handling
         conn.close()
@@ -259,24 +213,21 @@ def addDisk(disk: Disk) -> Status:
 
         rows_effected, _ = conn.execute(query)
         conn.commit()
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-        return Status.ERROR
+
     except DatabaseException.NOT_NULL_VIOLATION as e:
-        print(e)
         return Status.BAD_PARAMS
     except DatabaseException.CHECK_VIOLATION as e:
-        print(e)
         return Status.BAD_PARAMS
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        print(e)
-        return Status.ALREADY_EXISTS
     except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        print(e)
-        return Status.ALREADY_EXISTS
-    except Exception as e:
-        print(e)
         return Status.BAD_PARAMS
+
+    except DatabaseException.UNIQUE_VIOLATION as e:
+        return Status.ALREADY_EXISTS
+
+    except DatabaseException.ConnectionInvalid as e:
+        return Status.ERROR
+    except Exception as e:
+        return Status.ERROR
     finally:
         # will happen any way after code try termination or exception handling
         conn.close()
@@ -292,18 +243,9 @@ def getDiskByID(diskID: int) -> Disk:
         conn.commit()
         # rows_effected is the number of rows received by the SELECT
 
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        print(e)
-    except DatabaseException.CHECK_VIOLATION as e:
-        print(e)
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        print(e)
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        print(e)
     except Exception as e:
-        print(e)
+        return File.badFile()
+
     finally:
         conn.close()
         if result.rows:
@@ -334,29 +276,9 @@ def deleteDisk(diskID: int) -> Status:
         rows_effected, result = conn.execute(query)
         conn.commit()
 
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-        return Status.ERROR
-
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        print(e)
-        return Status.ERROR
-
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        print(e)
-        return Status.ERROR
-
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        print(e)
-        return Status.ERROR
-
-    except DatabaseException.CHECK_VIOLATION as e:
-        print(e)
-        return Status.ERROR
-
     except Exception as e:
-        print(e)
         return Status.ERROR
+
     finally:
         # will happen any way after code try termination or exception handling
         conn.close()
@@ -379,60 +301,23 @@ def addRAM(ram: RAM) -> Status:
 
         rows_effected, _ = conn.execute(query)
         conn.commit()
-    except DatabaseException.ConnectionInvalid as e:
-        return Status.ERROR
-
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        return Status.BAD_PARAMS
-
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        return Status.BAD_PARAMS
 
     except DatabaseException.UNIQUE_VIOLATION as e:
         return Status.ALREADY_EXISTS
 
+    except DatabaseException.NOT_NULL_VIOLATION as e:
+        return Status.BAD_PARAMS
+    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
+        return Status.BAD_PARAMS
     except DatabaseException.CHECK_VIOLATION as e:
         return Status.BAD_PARAMS
 
+    except DatabaseException.ConnectionInvalid as e:
+        return Status.ERROR
     except Exception as e:
-        print(e)
-        return Status.BAD_PARAMS
+        return Status.ERROR
     finally:
         # will happen any way after try termination or exception handling
-        conn.close()
-    return Status.OK
-
-
-def addRAM(ram: RAM) -> Status:
-    conn = None
-    try:
-        conn = Connector.DBConnector()
-        query = sql.SQL("INSERT INTO RAM(RAM_id,RAM_size,RAM_company)"
-                        " VALUES({id} ,{size},{company})").format(id=sql.Literal(ram.getRamID()),
-                                                                  company=sql.Literal(ram.getCompany()),
-                                                                  size=sql.Literal(ram.getSize()))
-        rows_effected, _ = conn.execute(query)
-        conn.commit()
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-        return Status.ERROR
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        print(e)
-        return Status.BAD_PARAMS
-    except DatabaseException.CHECK_VIOLATION as e:
-        print(e)
-        return Status.BAD_PARAMS
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        print(e)
-        return Status.ALREADY_EXISTS
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        print(e)
-        return Status.BAD_PARAMS
-    except Exception as e:
-        print(e)
-        return Status.ERROR
-    finally:
-        # will happen any way after code try termination or exception handling
         conn.close()
     return Status.OK
 
@@ -446,18 +331,9 @@ def getRAMByID(ramID: int) -> RAM:
         conn.commit()
         # rows_effected is the number of rows received by the SELECT
 
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        print(e)
-    except DatabaseException.CHECK_VIOLATION as e:
-        print(e)
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        print(e)
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        print(e)
     except Exception as e:
-        print(e)
+        return File.badFile()
+
     finally:
         conn.close()
         if result.rows:
@@ -488,28 +364,7 @@ def deleteRAM(ramID: int) -> Status:
         rows_effected, result = conn.execute(query)
         conn.commit()
 
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-        return Status.ERROR
-
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        print(e)
-        return Status.ERROR
-
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        print(e)
-        return Status.ERROR
-
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        print(e)
-        return Status.ERROR
-
-    except DatabaseException.CHECK_VIOLATION as e:
-        print(e)
-        return Status.ERROR
-
     except Exception as e:
-        print(e)
         return Status.ERROR
     finally:
         # will happen any way after code try termination or exception handling
@@ -542,19 +397,21 @@ def addDiskAndFile(disk: Disk, file: File) -> Status:
         rows_effected, _ = conn.execute(query)
         conn.commit()
 
-    except DatabaseException.ConnectionInvalid as e:
-        return Status.ERROR
+    except DatabaseException.UNIQUE_VIOLATION as e:
+        return Status.ALREADY_EXISTS
+
     except DatabaseException.NOT_NULL_VIOLATION as e:
         return Status.BAD_PARAMS
     except DatabaseException.FOREIGN_KEY_VIOLATION as e:
         return Status.BAD_PARAMS
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        return Status.ALREADY_EXISTS
     except DatabaseException.CHECK_VIOLATION as e:
         return Status.BAD_PARAMS
 
+    except DatabaseException.ConnectionInvalid as e:
+        return Status.ERROR
     except Exception as e:
-        print(e)
+        return Status.ERROR
+
     finally:
         # will happen any way after try termination or exception handling
         conn.close()
@@ -596,33 +453,26 @@ def addFileToDisk(file: File, diskID: int) -> Status:
                         "COMMIT;").format(disk_id=sql.Literal(diskID), file_id=sql.Literal(file.getFileID()))
         rows_effected, _ = conn.execute(query)
         conn.commit()
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-        return Status.ERROR
 
+    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
+        # case one of them not exist
+        return Status.NOT_EXISTS
     except DatabaseException.NOT_NULL_VIOLATION as e:
-        print(e)
         return Status.NOT_EXISTS
 
     except DatabaseException.CHECK_VIOLATION as e:
         # this is the case where file's size is greater than the free space on disk so there will be a violation
         # in the disk -> it will get value that is negative
-        print(e)
         return Status.BAD_PARAMS
-
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        # case on of them not exist
-        print(e)
-        return Status.NOT_EXISTS
 
     except DatabaseException.UNIQUE_VIOLATION as e:
         # case the file already save on the disk
-        print(e)
         return Status.ALREADY_EXISTS
 
+    except DatabaseException.ConnectionInvalid as e:
+        return Status.ERROR
     except Exception as e:
-        print(e)
-        return Status.BAD_PARAMS
+        return Status.ERROR
     finally:
         # will happen any way after code try termination or exception handling
         conn.close()
@@ -664,29 +514,8 @@ def removeFileFromDisk(file: File, diskID: int) -> Status:
         rows_effected, _ = conn.execute(query)
         conn.commit()
 
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-        return Status.ERROR
-
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        print(e)
-        return Status.OK
-
-    except DatabaseException.CHECK_VIOLATION as e:
-        print(e)
-        return Status.OK
-
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        print(e)
-        return Status.OK
-
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        print(e)
-        return Status.OK
-
     except Exception as e:
-        print(e)
-        return Status.OK
+        return Status.ERROR
 
     finally:
         # will happen any way after code try termination or exception handling
@@ -729,27 +558,17 @@ def addRAMToDisk(ramID: int, diskID: int) -> Status:
 
     except DatabaseException.FOREIGN_KEY_VIOLATION as e:
         # NOT_EXISTS if RAM/disk does not exist.
-        print(e)
         return Status.NOT_EXISTS
 
     except DatabaseException.UNIQUE_VIOLATION as e:
         # ALREADY_EXISTS if the RAM already a part of the disk.
-        print(e)
         return Status.ALREADY_EXISTS
 
     except DatabaseException.ConnectionInvalid as e:
         # ERROR in case of a database error
-        print(e)
         return Status.ERROR
-
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        print(e)
-
-    except DatabaseException.CHECK_VIOLATION as e:
-        print(e)
-
     except Exception as e:
-        print(e)
+        return Status.ERROR
 
     finally:
         # will happen any way after try termination or exception handling
@@ -779,29 +598,10 @@ def removeRAMFromDisk(ramID: int, diskID: int) -> Status:
 
         rows_effected, _ = conn.execute(query)
         conn.commit()
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-        return Status.ERROR
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return Status.ERROR
-    except DatabaseException.CHECK_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return Status.ERROR
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return Status.ERROR
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return Status.NOT_EXISTS
+
     except Exception as e:
-        # not suppose to come here
-        print(e)
         return Status.ERROR
+
     finally:
         # will happen any way after code try termination or exception handling
         conn.close()
@@ -839,27 +639,8 @@ def averageFileSizeOnDisk(diskID: int) -> float:
 
         rows_effected, X = conn.execute(query)
         conn.commit()
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-        return -1
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return -1
-    except DatabaseException.CHECK_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return -1
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return -1
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return -1
+
     except Exception as e:
-        print(e)
         return -1
     finally:
         # will happen any way after try termination or exception handling
@@ -868,7 +649,7 @@ def averageFileSizeOnDisk(diskID: int) -> float:
     if X.rows[0][0] is None:
         return 0
 
-    return X.rows[0][0]
+    return float(X.rows[0][0])
 
 
 def diskTotalRAM(diskID: int) -> int:
@@ -896,27 +677,8 @@ def diskTotalRAM(diskID: int) -> int:
                         "HAVING disk_id = {disk_id})").format(disk_id=sql.Literal(diskID))
         rows_effected, X = conn.execute(query)
         conn.commit()
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-        return -1
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return -1
-    except DatabaseException.CHECK_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return -1
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return -1
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return -1
+
     except Exception as e:
-        print(e)
         return -1
     finally:
         # will happen any way after try termination or exception handling
@@ -944,7 +706,10 @@ def getCostForType(type: str) -> int:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("BEGIN;"
-
+                        "DROP VIEW IF EXISTS File_id_size CASCADE; "
+                        "DROP VIEW IF EXISTS Disk_id_CPB CASCADE; "
+                        "DROP VIEW IF EXISTS DiskIDS2 CASCADE; "
+                        
                         "CREATE VIEW File_id_size AS "
                         "SELECT file_id ,file_size "
                         "FROM File "
@@ -967,27 +732,8 @@ def getCostForType(type: str) -> int:
 
         rows_effected, X = conn.execute(query)
         conn.commit()
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-        return -1
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return -1
-    except DatabaseException.CHECK_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return -1
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return -1
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return -1
+
     except Exception as e:
-        print(e)
         return -1
     finally:
         # will happen any way after try termination or exception handling
@@ -1025,33 +771,8 @@ def getFilesCanBeAddedToDisk(diskID: int) -> List[int]:
         rows_effected, result = conn.execute(query)
         conn.commit()
 
-    except DatabaseException.ConnectionInvalid as e:
-        # not suppose to come here
-        print(e)
-        return []
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return []
-
-    except DatabaseException.CHECK_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return []
-
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return []
-
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return []
-
     except Exception as e:
         # not suppose to come here
-        print(e)
         return []
 
     finally:
@@ -1083,7 +804,14 @@ def getFilesCanBeAddedToDiskAndRAM(diskID: int) -> List[int]:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("BEGIN;"
-                        "CREATE VIEW RAM_PART_OF_DISK AS SELECT  RAM_id "
+                        "DROP VIEW IF EXISTS RAM_PART_OF_DISK CASCADE; "
+                        "DROP VIEW IF EXISTS RAM_SIZED CASCADE; "
+                        "DROP VIEW IF EXISTS DISK_FREE_SPACE CASCADE; "
+                        "DROP VIEW IF EXISTS RESULT CASCADE; "
+                        "DROP VIEW IF EXISTS RESULT_2 CASCADE; "
+
+                        
+                        "CREATE VIEW RAM_PART_OF_DISK AS SELECT RAM_id "
                         "FROM DiskRAM "
                         "GROUP BY disk_id, RAM_id "
                         "HAVING disk_id = {disk_id};"
@@ -1099,45 +827,22 @@ def getFilesCanBeAddedToDiskAndRAM(diskID: int) -> List[int]:
                         "WHERE disk_id = {disk_id}; "
 
                         "CREATE VIEW RESULT AS SELECT file_id FROM File "
-                        "WHERE file_size <= (SELECT SUM(disk_free_space) FROM DISK_FREE_SPACE)"
-                        " AND file_size <= (SELECT SUM(RAM_size) FROM RAM_SIZED); "
-
-                        "SELECT file_id FROM RESULT "
+                        "WHERE file_size <= COALESCE((SELECT SUM(disk_free_space) FROM DISK_FREE_SPACE),0) "
+                        "AND file_size <= COALESCE((SELECT SUM(RAM_size) FROM RAM_SIZED),0); "
+                        
+                        "CREATE VIEW RESULT_2 AS "
+                        "SELECT file_id "
+                        "FROM RESULT "
                         "ORDER BY file_id ASC LIMIT 5;"
 
-                        "SELECT * FROM RESULT "
+                        "SELECT * FROM RESULT_2 "
                         "COMMIT;").format(disk_id=sql.Literal(diskID))
 
         rows_effected, result = conn.execute(query)
         conn.commit()
 
-    except DatabaseException.ConnectionInvalid as e:
-        # not suppose to come here
-        print(e)
-        return []
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return []
-
-    except DatabaseException.CHECK_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return []
-
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return []
-
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        # not suppose to come here
-        print(e)
-        return []
-
     except Exception as e:
         # not suppose to come here
-        print(e)
         return []
 
     finally:
@@ -1145,8 +850,9 @@ def getFilesCanBeAddedToDiskAndRAM(diskID: int) -> List[int]:
         conn.close()
 
     return_list = []
-    for x in result.rows:
-        return_list.append(int(x[0]))
+    if result.rows:
+        for x in result.rows:
+            return_list.append(int(x[0]))
     return return_list
 
 
@@ -1156,13 +862,16 @@ def isCompanyExclusive(diskID: int) -> bool:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("BEGIN;"
+                        "DROP TABLE IF EXISTS Temp CASCADE; "
+                        "DROP VIEW IF EXISTS RAM_IN_DISK_COMPANY CASCADE; "
+                        "DROP VIEW IF EXISTS DISK_COMPANY_NAME CASCADE; "
+                        "DROP VIEW IF EXISTS RESULT CASCADE; "
 
                         "CREATE TABLE Temp("
                         "disk_id INTEGER,"
                         "FOREIGN KEY (disk_id) REFERENCES Disk(disk_id));"
                         "INSERT INTO Temp(disk_id) VALUES({disk_id});"
                         "DROP TABLE IF EXISTS Temp ;"
-
 
                         "CREATE VIEW RAM_IN_DISK_COMPANY AS "
                         "SELECT DISTINCT RAM_company "
@@ -1190,19 +899,12 @@ def isCompanyExclusive(diskID: int) -> bool:
 
         rows_effected, result = conn.execute(query)
         conn.commit()
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        print(e)
-    except DatabaseException.CHECK_VIOLATION as e:
-        print(e)
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        print(e)
+
     except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        print(e)
         return False
     except Exception as e:
-        print(e)
+        return False
+
     finally:
         # will happen any way after try termination or exception handling
         conn.close()
@@ -1230,6 +932,9 @@ def getConflictingDisks() -> List[int]:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("BEGIN;"
+                        "DROP VIEW IF EXISTS FILE_COUNT_OF_DISKS CASCADE; "
+                        "DROP VIEW IF EXISTS FILE_COUNT_GREATE_THAN_ONE CASCADE; "
+                        "DROP VIEW IF EXISTS RESULT CASCADE; "
 
                         "CREATE VIEW FILE_COUNT_OF_DISKS AS "
                         "SELECT file_id, COUNT(disk_id) "
@@ -1254,28 +959,8 @@ def getConflictingDisks() -> List[int]:
 
         rows_effected, result = conn.execute(query)
         conn.commit()
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-        return []
-
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        print(e)
-        return []
-
-    except DatabaseException.CHECK_VIOLATION as e:
-        print(e)
-        return []
-
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        print(e)
-        return []
-
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        print(e)
-        return []
 
     except Exception as e:
-        print(e)
         return []
 
     finally:
@@ -1293,80 +978,43 @@ def getConflictingDisks() -> List[int]:
     return []
 
 
-def mostAvailableDisks() -> List[int]:
-    """
-    Returns a list of up to 5 disks' IDs that can save the most files (as singles).
-    A disk can save a file if and only if the file’s size is not larger than the free space on disk
-    (even if it’s already saved on the disk).
-    The list should be ordered by:
-    • Main sort by number of files in descending order.
-    • Secondary sort by disk's speed in descending order.
-    • Final sort by diskID in ascending order.
-    Input: None
 
-    :return:
-    Output:
-    *List with the disks' IDs that satisfy the conditions above (if there are less than 5 disks, return a List with the <5 disks).
-    *Empty List in any other case.
-    """
+
+def mostAvailableDisks() -> List[int]:
     conn = None
     rows_effected, result = 0, Connector.ResultSet()
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("BEGIN;"
+                        "DROP VIEW IF EXISTS R8 CASCADE; "
+                        "DROP VIEW IF EXISTS R9 CASCADE; "
 
-                        "CREATE VIEW  DISK_ID_DISK_SPEED_NUMBER_OF_FILES AS "
-                        "SELECT disk_id, disk_speed, count(file_id) "
-                        "FROM Disk, File "
-                        "GROUP BY Disk.disk_id, Disk.disk_speed, File.file_id "
-                        "HAVING Disk.disk_free_space >= File.file_size;"
+                        "CREATE VIEW R8 AS "
+                        "SELECT d1.disk_id, d1.disk_speed,Count(f1.file_id) "
+                        "FROM Disk d1 LEFT JOIN File f1 ON disk_free_space >= file_size "
+                        "GROUP BY d1.disk_id; "
 
-                        "CREATE VIEW RESULT AS "
-                        "SELECT disk_id, disk_speed, COUNT(count) "
-                        "FROM DISK_ID_DISK_SPEED_NUMBER_OF_FILES "
-                        "GROUP BY disk_id, disk_speed "
-                        "ORDER BY count DESC, disk_speed DESC, disk_id ASC LIMIT 5; "
-
-                        "SELECT disk_id FROM RESULT "
+                        "CREATE VIEW R9 AS SELECT disk_id,disk_speed, R8.count FROM R8 "
+                        "GROUP BY disk_id,disk_speed,R8.count "
+                        "ORDER BY count DESC, "
+                        "disk_speed DESC,"
+                        "disk_id ASC LIMIT 5 ;"
+                        
+                        "SELECT disk_id FROM R9 "
                         "COMMIT;")
 
         rows_effected, result = conn.execute(query)
         conn.commit()
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-        return []
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        print(e)
-        return []
-
-    except DatabaseException.CHECK_VIOLATION as e:
-        print(e)
-        return []
-
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        print(e)
-        return []
-
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        print(e)
-        return []
-
     except Exception as e:
-        print(e)
         return []
-
     finally:
         # will happen any way after try termination or exception handling
         conn.close()
-
-    return_list = []
-
-    if result.rows:
-        # the list is not empty
+    ret_list = []
+    if (result.rows):
         for res in result.rows:
-            return_list.append(int(res[0]))
-        return return_list
-
+            ret_list.append(int(res[0]))
+        return ret_list
     return []
 
 
@@ -1390,56 +1038,64 @@ def getCloseFiles(fileID: int) -> List[int]:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("BEGIN;"
-                        
-                        "CREATE VIEW DiskInFile AS "
-                        "SELECT disk_id "
+                        "DROP VIEW IF EXISTS FileInDisk CASCADE; "
+                        "DROP VIEW IF EXISTS allFiles CASCADE; "
+                        "DROP VIEW IF EXISTS CountCommon CASCADE; "
+                        "DROP VIEW IF EXISTS Count2 CASCADE; "
+                        "DROP VIEW IF EXISTS comb CASCADE; "
+                        "DROP VIEW IF EXISTS Count3 CASCADE; "
+                        "DROP VIEW IF EXISTS returnVal CASCADE; "
+
+                        "CREATE VIEW FileInDisk AS "
+                        "SELECT file_id,disk_id "
                         "FROM DiskFile "
-                        "GROUP BY DiskFile.file_id, DiskFile.disk_id "
-                        "HAVING DiskFile.file_id = {file_id}; "
+                        "GROUP BY file_id,disk_id "
+                        "HAVING file_id = {file_id}; "
                         
-                        
-                        
-                        "CREATE VIEW COUNT_DISK_PER_FILE AS "
-                        "SELECT file_id, COUNT(disk_id) "
+                        "CREATE VIEW CountCommon AS "
+                        "SELECT file_id,COUNT(disk_id) "
                         "FROM DiskFile "
-                        "GROUP BY DiskFile.file_id, DiskFile.disk_id "
-                        "HAVING DiskFile.disk_id IN (SELECT disk_id FROM DiskInFile) "
-                        "AND DiskFile.file_id != {file_id}; "
-                        
-                        "CREATE VIEW MID_VALUE AS "
-                        "SELECT COUNT(disk_id)/2.0 "
-                        "FROM DiskInFile; "
-                        
-                        "CREATE VIEW COUNT_DISK_PER_FILE_ASC AS "
-                        "SELECT COUNT_DISK_PER_FILE.file_id, COUNT(count) "
-                        "FROM COUNT_DISK_PER_FILE "
-                        "GROUP BY COUNT_DISK_PER_FILE.file_id "
-                        "ORDER BY count DESC;"
-                        
-                        "CREATE VIEW RESULT AS "
+                        "GROUP BY file_id ,disk_id "
+                        "HAVING DiskFile.disk_id IN (SELECT disk_id FROM FileInDisk) AND file_id !={file_id} ;"
+
+
+                        "CREATE VIEW allFiles AS "
+                        "SELECT file_id, 0 count "
+                        "FROM File "
+                        "WHERE file_id !={file_id} ;"
+
+
+                        # count shared files 
+
+                        "CREATE VIEW Count2 AS "
+                        "SELECT CountCommon.file_id, COUNT(count)"
+                        " FROM CountCommon "
+                        "GROUP BY CountCommon.file_id ;"
+
+                        "CREATE VIEW comb AS "
+                        "SELECT Distinct allFiles.file_id, "
+                        "COALESCE((SELECT count FROM Count2 WHERE allFiles.file_id = Count2.file_id),0) count "
+                        "FROM allFiles ;"
+
+                        "CREATE VIEW Count3 AS "
                         "SELECT file_id "
-                        "FROM COUNT_DISK_PER_FILE_ASC "
-                        "WHERE COUNT_DISK_PER_FILE_ASC.count >= (SELECT count FROM MID_VALUE)"
-                        "ORDER BY file_id ASC LIMIT 10; "
+                        "FROM comb "
+                        "WHERE count >= (SELECT count(disk_id)/2.0 FROM FileInDisk); "
+
+                        "CREATE VIEW returnVal AS "
+                        "SELECT file_id "
+                        "FROM Count3 "
+                        "ORDER BY file_id ASC LIMIT 10;"
                         
-                        
-                        "SELECT file_id FROM RESULT "
+                        "SELECT * FROM returnVal  "
                         "COMMIT;").format(file_id=sql.Literal(fileID))
 
         rows_effected, result = conn.execute(query)
         conn.commit()
-    except DatabaseException.ConnectionInvalid as e:
-        print(e)
-    except DatabaseException.NOT_NULL_VIOLATION as e:
-        print(e)
-    except DatabaseException.CHECK_VIOLATION as e:
-        print(e)
-    except DatabaseException.UNIQUE_VIOLATION as e:
-        print(e)
-    except DatabaseException.FOREIGN_KEY_VIOLATION as e:
-        print(e)
+
     except Exception as e:
-        print(e)
+        return []
+
     finally:
         # will happen any way after try termination or exception handling
         conn.close()
@@ -1456,3 +1112,4 @@ def getCloseFiles(fileID: int) -> List[int]:
 
 if __name__ == '__main__':
     dropTables()
+    # createTables()
