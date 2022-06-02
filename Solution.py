@@ -165,7 +165,7 @@ def deleteFile(file: File) -> Status:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("BEGIN;"
-                        
+
                         "DROP VIEW IF EXISTS FILE_SIZE CASCADE; "
                         "DROP VIEW IF EXISTS DISK_HAVING_FILE CASCADE; "
 
@@ -709,7 +709,7 @@ def getCostForType(type: str) -> int:
                         "DROP VIEW IF EXISTS File_id_size CASCADE; "
                         "DROP VIEW IF EXISTS Disk_id_CPB CASCADE; "
                         "DROP VIEW IF EXISTS DiskIDS2 CASCADE; "
-                        
+
                         "CREATE VIEW File_id_size AS "
                         "SELECT file_id ,file_size "
                         "FROM File "
@@ -810,7 +810,7 @@ def getFilesCanBeAddedToDiskAndRAM(diskID: int) -> List[int]:
                         "DROP VIEW IF EXISTS RESULT CASCADE; "
                         "DROP VIEW IF EXISTS RESULT_2 CASCADE; "
 
-                        
+
                         "CREATE VIEW RAM_PART_OF_DISK AS SELECT RAM_id "
                         "FROM DiskRAM "
                         "GROUP BY disk_id, RAM_id "
@@ -829,7 +829,7 @@ def getFilesCanBeAddedToDiskAndRAM(diskID: int) -> List[int]:
                         "CREATE VIEW RESULT AS SELECT file_id FROM File "
                         "WHERE file_size <= COALESCE((SELECT SUM(disk_free_space) FROM DISK_FREE_SPACE),0) "
                         "AND file_size <= COALESCE((SELECT SUM(RAM_size) FROM RAM_SIZED),0); "
-                        
+
                         "CREATE VIEW RESULT_2 AS "
                         "SELECT file_id "
                         "FROM RESULT "
@@ -867,34 +867,24 @@ def isCompanyExclusive(diskID: int) -> bool:
                         "DROP VIEW IF EXISTS DISK_COMPANY_NAME CASCADE; "
                         "DROP VIEW IF EXISTS RESULT CASCADE; "
 
-                        "CREATE TABLE Temp("
-                        "disk_id INTEGER,"
-                        "FOREIGN KEY (disk_id) REFERENCES Disk(disk_id));"
+                        "CREATE TABLE Temp(disk_id INTEGER, FOREIGN KEY (disk_id) REFERENCES Disk(disk_id));"
+
                         "INSERT INTO Temp(disk_id) VALUES({disk_id});"
+
                         "DROP TABLE IF EXISTS Temp ;"
 
-                        "CREATE VIEW RAM_IN_DISK_COMPANY AS "
-                        "SELECT DISTINCT RAM_company "
-                        "FROM RAM "
-                        "WHERE RAM.RAM_id IN "
-                        "(SELECT  RAM_id "
-                        "FROM DiskRAM "
-                        "GROUP BY disk_id, RAM_id "
-                        "HAVING disk_id = {disk_id}); "
+                        "CREATE VIEW DISK_COMPANY_NAME AS SELECT disk_company "
+                        "FROM Disk WHERE Disk.disk_id = {disk_id};"
 
-                        "CREATE VIEW DISK_COMPANY_NAME AS "
-                        "SELECT disk_company "
-                        "FROM Disk "
-                        "WHERE Disk.disk_id = {disk_id};"
+                        "CREATE VIEW RAM_IN_DISK_COMPANY AS SELECT DISTINCT RAM_company "
+                        "FROM RAM WHERE RAM.RAM_id IN "
+                        "(SELECT  RAM_id FROM DiskRAM GROUP BY disk_id, RAM_id HAVING disk_id = {disk_id}); "
 
-                        "CREATE VIEW RESULT AS "
-                        "SELECT disk_company "
+                        "CREATE VIEW RESULT AS SELECT disk_company "
                         "FROM DISK_COMPANY_NAME, RAM_IN_DISK_COMPANY "
                         "WHERE DISK_COMPANY_NAME.disk_company != RAM_IN_DISK_COMPANY.RAM_company;"
 
-                        "SELECT COUNT(disk_company) "
-                        "FROM RESULT "
-
+                        "SELECT COUNT(disk_company) FROM RESULT "
                         "COMMIT;").format(disk_id=sql.Literal(diskID))
 
         rows_effected, result = conn.execute(query)
@@ -1036,55 +1026,47 @@ def getCloseFiles(fileID: int) -> List[int]:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL("BEGIN;"
-                        "DROP VIEW IF EXISTS DiskInFile CASCADE; "
-                        "DROP VIEW IF EXISTS FILE_ID_COUNT_0 CASCADE; "
-                        "DROP VIEW IF EXISTS COUNT_DISK_PER_FILE CASCADE; "
-                        "DROP VIEW IF EXISTS COUNT_DISK_PER_FILE_BIGGER_THAN_ZERO CASCADE; "
-                        "DROP VIEW IF EXISTS TEMP_VIEW CASCADE; "
-                        "DROP VIEW IF EXISTS TEMP_VIEW_2 CASCADE; "
-                        "DROP VIEW IF EXISTS RESULT CASCADE; "
+                        "DROP VIEW IF EXISTS FileInDisk CASCADE; "
+                        "DROP VIEW IF EXISTS allFiles CASCADE; "
+                        "DROP VIEW IF EXISTS CountCommon CASCADE; "
+                        "DROP VIEW IF EXISTS Count2 CASCADE; "
+                        "DROP VIEW IF EXISTS comb CASCADE; "
+                        "DROP VIEW IF EXISTS Count3 CASCADE; "
+                        "DROP VIEW IF EXISTS returnVal CASCADE; "
+                        "DROP TABLE IF EXISTS Temp CASCADE; "
                         
-                        "CREATE VIEW DiskInFile AS "
-                        "SELECT disk_id "
+                        "CREATE TABLE Temp(file_id INTEGER, FOREIGN KEY (file_id) REFERENCES File(file_id));"
+
+                        "INSERT INTO Temp(file_id) VALUES({file_id});"
+
+                        "DROP TABLE IF EXISTS Temp ;"
+                        
+                        "CREATE VIEW FileInDisk AS SELECT file_id,disk_id "
                         "FROM DiskFile "
-                        "GROUP BY DiskFile.file_id, DiskFile.disk_id "
-                        "HAVING DiskFile.file_id = {file_id}; "
-                        
-                        "CREATE VIEW FILE_ID_COUNT_0 AS "
-                        "SELECT file_id, 0 count "
+                        "GROUP BY file_id,disk_id "
+                        "HAVING file_id = {file_id}; "
+            
+                        "CREATE VIEW allFiles AS SELECT file_id, 0 count "
                         "FROM File "
-                        "WHERE File.file_id != {file_id} ;"
+                        "WHERE file_id !={file_id} ;"
                         
-                        "CREATE VIEW COUNT_DISK_PER_FILE AS "
-                        "SELECT file_id, COUNT(disk_id) "
-                        "FROM DiskFile "
-                        "GROUP BY DiskFile.file_id, DiskFile.disk_id "
-                        "HAVING DiskFile.disk_id IN (SELECT disk_id FROM DiskInFile) "
-                        "AND DiskFile.file_id != {file_id}; "
+                        "CREATE VIEW CountCommon AS SELECT file_id,COUNT(disk_id) FROM DiskFile "
+                        "GROUP BY file_id ,disk_id "
+                        "HAVING DiskFile.disk_id IN (SELECT disk_id FROM FileInDisk) AND file_id !={file_id} ;"
                         
-                        "CREATE VIEW COUNT_DISK_PER_FILE_BIGGER_THAN_ZERO AS "
-                        "SELECT COUNT_DISK_PER_FILE.file_id, COUNT(count) "
-                        "FROM COUNT_DISK_PER_FILE "
-                        "GROUP BY COUNT_DISK_PER_FILE.file_id ;"
-
-                        "CREATE VIEW TEMP_VIEW AS "
-                        "SELECT Distinct FILE_ID_COUNT_0.file_id, "
-                        "COALESCE((SELECT count "
-                        "FROM COUNT_DISK_PER_FILE_BIGGER_THAN_ZERO "
-                        "WHERE FILE_ID_COUNT_0.file_id = COUNT_DISK_PER_FILE_BIGGER_THAN_ZERO.file_id),0) count "
-                        "FROM FILE_ID_COUNT_0 ;"
-
-                        "CREATE VIEW TEMP_VIEW_2 AS "
-                        "SELECT file_id "
-                        "FROM TEMP_VIEW "
-                        "WHERE TEMP_VIEW.count >= (SELECT count(disk_id)/2.0 FROM DiskInFile); "
+                        "CREATE VIEW Count2 AS SELECT CountCommon.file_id, COUNT(count) FROM CountCommon "
+                        "GROUP BY CountCommon.file_id ;"
                         
-                        "CREATE VIEW RESULT AS "
-                        "SELECT file_id "
-                        "FROM TEMP_VIEW_2 "
-                        "ORDER BY TEMP_VIEW_2.file_id ASC LIMIT 10;"
+                        "CREATE VIEW comb AS SELECT Distinct allFiles.file_id, "
+                                "COALESCE((SELECT count FROM Count2 WHERE allFiles.file_id = Count2.file_id),0) count "
+                        "FROM allFiles ;"
                         
-                        "SELECT * FROM RESULT "
+                        "CREATE VIEW Count3 AS SELECT file_id FROM comb "
+                        "WHERE count >= (SELECT count(disk_id)/2.0 FROM FileInDisk); "
+                        
+                        "CREATE VIEW returnVal AS SELECT file_id FROM Count3 "
+                        "ORDER BY file_id ASC LIMIT 10;"
+                        "SELECT * FROM returnVal  "
                         "COMMIT;").format(file_id=sql.Literal(fileID))
 
         rows_effected, result = conn.execute(query)
@@ -1109,4 +1091,3 @@ def getCloseFiles(fileID: int) -> List[int]:
 
 if __name__ == '__main__':
     dropTables()
-    # createTables()
